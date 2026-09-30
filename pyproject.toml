@@ -3,17 +3,16 @@ requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "your-package-name"  # Replace with your actual package name
+name = "CASafari"
 version = "0.1.0"
 description = "A Flask and TwitchIO web application and bot"
 readme = "README.md"
 authors = [
-    { name = "Your Name", email = "your.email@example.com" }
+    { name = "c-astronomy", email = "your.email@example.com" }
 ]
 license = { text = "AGPL-3.0-only" }
 requires-python = ">=3.8"
 
-# These tell PyPI and automated tools exactly how your package is configured
 classifiers = [
     "License :: OSI Approved :: GNU Affero General Public License v3",
     "Programming Language :: Python :: 3",
@@ -24,19 +23,13 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Framework :: Flask",
     "Topic :: Communications :: Chat",
-    "Intended Audience :: Developers",
+    "Intended Audience :: Developers"
 ]
 
-# The external libraries you imported that aren't part of Python's standard library
 dependencies = [
     "flask>=3.0.0",
     "twitchio>=2.0.0",
     "redis>=5.0.0",
     "asqlite>=2.0.0",
-    "pycurl>=7.45.0",
+    "pycurl>=7.45.0"
 ]
-
-[project.urls]
-Homepage = "https://github.com"
-Bug-Tracker = "https://github.com/issues"
-
