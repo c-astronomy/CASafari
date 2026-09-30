@@ -1,3 +1,10 @@
+# =====================================================================
+# EXPERIMENTAL / FUTURE FEATURE
+# This file is currently unused in v0.1.0. 
+# If you want to test it manually, you must install additional packages:
+# pip install sounddevice pocket-tts numpy
+# =====================================================================
+
 import asyncio
 import json
 import redis.asyncio as redis
