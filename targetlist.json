@@ -1,0 +1,386 @@
+[
+    {
+        "ra": 5,
+        "ra_min": 42,
+        "dec": -2,
+        "dec_min": 26,
+        "name": "Horsehead nebula",
+        "trigger": "!slew_horsehead"
+    },
+    {
+        "ra": 21,
+        "ra_min": 0,
+        "dec": 57,
+        "dec_min": 0,
+        "name": "Elephants trunk nebula",
+        "trigger": "!slew_trunk"
+    },
+    {
+        "ra": 0,
+        "ra_min": 44,
+        "dec": 41,
+        "dec_min": 16,
+        "name": "Andromeda galaxy",
+        "trigger": "!slew_andromeda"
+    },
+    {
+        "ra": 5,
+        "ra_min": 35,
+        "dec": -5,
+        "dec_min": 0,
+        "name": "Orion nebula",
+        "trigger": "!slew_orion"
+    },
+    {
+        "ra": 6,
+        "ra_min": 0,
+        "dec": 20,
+        "dec_min": 0,
+        "name": "Monkeyhead nebula",
+        "trigger": "!slew_monkeyhead"
+    },
+    {
+        "ra": 6,
+        "ra_min": 3,
+        "dec": 4,
+        "dec_min": 58,
+        "name": "Rosette nebula",
+        "trigger": "!slew_rosette"
+    },
+    {
+        "ra": 13,
+        "ra_min": 29,
+        "dec": 47,
+        "dec_min": 0,
+        "name": "Whirlpool galaxy",
+        "trigger": "!slew_whirlpool"
+    },
+    {
+        "ra": 14,
+        "ra_min": 3,
+        "dec": 54,
+        "dec_min": 20,
+        "name": "Pinwheel galaxy",
+        "trigger": "!slew_pinwheel"
+    },
+    {
+        "ra": 16,
+        "ra_min": 42,
+        "dec": 36,
+        "dec_min": 27,
+        "name": "Hercules globular cluster",
+        "trigger": "!slew_hercules"
+    },
+    {
+        "ra": 20,
+        "ra_min": 58,
+        "dec": 43,
+        "dec_min": 27,
+        "name": "Northamerica nebula",
+        "trigger": "!slew_northamerica"
+    },
+    {
+        "ra": 20,
+        "ra_min": 45,
+        "dec": 30,
+        "dec_min": 42,
+        "name": "Witchbroom nebula",
+        "trigger": "!slew_witchbroom"
+    },
+    {
+        "ra": 20,
+        "ra_min": 55,
+        "dec": 31,
+        "dec_min": 24,
+        "name": "East veil nebula",
+        "trigger": "!slew_eastveil"
+    },
+    {
+        "ra": 20,
+        "ra_min": 47,
+        "dec": 31,
+        "dec_min": 40,
+        "name": "Triangle nebula",
+        "trigger": "!slew_triangle"
+    },
+    {
+        "ra": 20,
+        "ra_min": 12,
+        "dec": 38,
+        "dec_min": 21,
+        "name": "Crescent nebula",
+        "trigger": "!slew_crescent"
+    },
+    {
+        "ra": 21,
+        "ra_min": 19,
+        "dec": 55,
+        "dec_min": 45,
+        "name": "Lion nebula",
+        "trigger": "!slew_lion"
+    },
+    {
+        "ra": 22,
+        "ra_min": 47,
+        "dec": 58,
+        "dec_min": 5,
+        "name": "Wizard nebula",
+        "trigger": "!slew_wizard"
+    },
+    {
+        "ra": 21,
+        "ra_min": 16,
+        "dec": 60,
+        "dec_min": 0,
+        "name": "Lobster claw nebula",
+        "trigger": "!slew_lobsterclaw"
+    },
+    {
+        "ra": 2,
+        "ra_min": 32,
+        "dec": 61,
+        "dec_min": 22,
+        "name": "Merlotte nebula",
+        "trigger": "!slew_merlotte"
+    },
+    {
+        "ra": 2,
+        "ra_min": 54,
+        "dec": 25,
+        "dec_min": 62,
+        "name": "Fish head nebula",
+        "trigger": "!slew_fishhead"
+    },
+    {
+        "ra": 2,
+        "ra_min": 54,
+        "dec": 60,
+        "dec_min": 27,
+        "name": "Soul nebula",
+        "trigger": "!slew_soul"
+    },
+    {
+        "ra": 6,
+        "ra_min": 18,
+        "dec": 22,
+        "dec_min": 39,
+        "name": "Jellyfish nebula",
+        "trigger": "!slew_jellyfish"
+    },
+    {
+        "ra": 20,
+        "ra_min": 27,
+        "dec": 40,
+        "dec_min": 0,
+        "name": "The butterfly nebula",
+        "trigger": "!slew_butterfly"
+    },
+    {
+        "ra": 9,
+        "ra_min": 57,
+        "dec": 68,
+        "dec_min": 56,
+        "name": "Bodes galaxy",
+        "trigger": "!slew_bodes"
+    },
+    {
+        "ra": 21,
+        "ra_min": 29,
+        "dec": 12,
+        "dec_min": 10,
+        "name": "Great pegasus cluster",
+        "trigger": "!slew_pegasuscluster"
+    },
+    {
+        "ra": 21,
+        "ra_min": 53,
+        "dec": 47,
+        "dec_min": 16,
+        "name": "Cocoon nebula",
+        "trigger": "!slew_cocoon"
+    },
+    {
+        "ra": 1,
+        "ra_min": 33,
+        "dec": 30,
+        "dec_min": 39,
+        "name": "Triangulum galaxy",
+        "trigger": "!slew_triangulum"
+    },
+    {
+        "ra": 3,
+        "ra_min": 47,
+        "dec": 24,
+        "dec_min": 7,
+        "name": "Pleiades",
+        "trigger": "!slew_pleiades"
+    },
+    {
+        "ra": 5,
+        "ra_min": 17,
+        "dec": 34,
+        "dec_min": 22,
+        "name": "Flaming star nebula",
+        "trigger": "!slew_flamingstar"
+    },
+    {
+        "ra": 2,
+        "ra_min": 22,
+        "dec": 42,
+        "dec_min": 20,
+        "name": "The silver sliver galaxy",
+        "trigger": "!slew_silversliver"
+    },
+    {
+        "ra": 7,
+        "ra_min": 36,
+        "dec": 65,
+        "dec_min": 32,
+        "name": "Ngc 2403 galaxy",
+        "trigger": "!slew_ngc2403"
+    },
+    {
+        "ra": 19,
+        "ra_min": 59,
+        "dec": 22,
+        "dec_min": 43,
+        "name": "Dumbbell nebula",
+        "trigger": "!slew_dumbbell"
+    },
+    {
+        "ra": 20,
+        "ra_min": 34,
+        "dec": 60,
+        "dec_min": 9,
+        "name": "Fireworks galaxy",
+        "trigger": "!slew_fireworks"
+    },
+    {
+        "ra": 21,
+        "ra_min": 1,
+        "dec": 68,
+        "dec_min": 9,
+        "name": "Iris nebula",
+        "trigger": "!slew_iris"
+    },
+    {
+        "ra": 12,
+        "ra_min": 18,
+        "dec": 47,
+        "dec_min": 18,
+        "name": "Messier 106 galaxy",
+        "trigger": "!slew_m106"
+    },
+    {
+        "ra": 11,
+        "ra_min": 11,
+        "dec": 55,
+        "dec_min": 40,
+        "name": "Surfboard galaxy",
+        "trigger": "!slew_surfboard"
+    },
+    {
+        "ra": 5,
+        "ra_min": 52,
+        "dec": 32,
+        "dec_min": 33,
+        "name": "Salt and pepper cluster",
+        "trigger": "!slew_salt"
+    },
+    {
+        "ra": 4,
+        "ra_min": 45,
+        "dec": 19,
+        "dec_min": 6,
+        "name": "Pirate moon cluster",
+        "trigger": "!slew_piratemoon"
+    },
+    {
+        "ra": 13,
+        "ra_min": 15,
+        "dec": 42,
+        "dec_min": 2,
+        "name": "Sunflower galaxy",
+        "trigger": "!slew_sunflower"
+    },
+    {
+        "ra": 19,
+        "ra_min": 42,
+        "dec": 23,
+        "dec_min": 5,
+        "name": "Ngc 6820",
+        "trigger": "!slew_ngc6820"
+    },
+    {
+        "ra": 4,
+        "ra_min": 5,
+        "dec": 51,
+        "dec_min": 23,
+        "name": "Fossil's footprint",
+        "trigger": "!slew_fossil"
+    },
+    {
+        "ra": 4,
+        "ra_min": 4,
+        "dec": 36,
+        "dec_min": 29,
+        "name": "California nebula",
+        "trigger": "!slew_california"
+    },
+    {
+        "ra": 11,
+        "ra_min": 57,
+        "dec": 53,
+        "dec_min": 22,
+        "name": "Messier 109 galaxy",
+        "trigger": "!slew_m109"
+    },
+    {
+        "ra": 12,
+        "ra_min": 50,
+        "dec": 41,
+        "dec_min": 7,
+        "name": "Messier 94 galaxy",
+        "trigger": "!slew_m94"
+    },
+    {
+        "ra": 12,
+        "ra_min": 42,
+        "dec": 32,
+        "dec_min": 32,
+        "name": "Whale galaxy",
+        "trigger": "!slew_whale"
+    },
+    {
+        "ra": 13,
+        "ra_min": 42,
+        "dec": 28,
+        "dec_min": 22,
+        "name": "Messier 3 cluster",
+        "trigger": "!slew_m3"
+    },
+    {
+        "ra": 2,
+        "ra_min": 20,
+        "dec": 57,
+        "dec_min": 8,
+        "name": "Double cluster",
+        "trigger": "!slew_double"
+    },
+    {
+        "ra": 17,
+        "ra_min": 17,
+        "dec": 43,
+        "dec_min": 8,
+        "name": "Messier 92",
+        "trigger": "!slew_m92"
+    },
+    {
+        "ra": 3,
+        "ra_min": 46,
+        "dec": 68,
+        "dec_min": 5,
+        "name": "The hidden galaxy",
+        "trigger": "!slew_thehidden"
+    }
+]
