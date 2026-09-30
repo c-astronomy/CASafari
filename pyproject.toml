@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "CASafari"
-version = "0.1.0"
+version = "0.1.2"
 description = "A Flask and TwitchIO web application and bot"
 readme = "README.md"
 authors = [
@@ -33,3 +33,7 @@ dependencies = [
     "asqlite>=2.0.0",
     "pycurl>=7.45.0"
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
