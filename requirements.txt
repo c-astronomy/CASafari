@@ -1,0 +1,9 @@
+pycurl
+redis
+redislite
+aiohttp
+requests
+websocket-client
+twitchio[starlette]
+asqlite
+flask
