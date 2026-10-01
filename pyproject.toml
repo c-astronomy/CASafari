@@ -28,8 +28,8 @@ classifiers = [
 
 dependencies = [
     "flask>=3.0.0",
-    "twitchio>=2.0.0",
     "redis>=5.0.0",
+    "redislite>=6.0.0",
     "asqlite>=2.0.0",
     "pycurl>=7.45.0",
     "twitchio[starlette>=3.3.0]"
