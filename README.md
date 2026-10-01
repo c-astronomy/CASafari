@@ -1,4 +1,5 @@
 ***For Windows users, you need to find a way to install redis-server, you could run everything under WSL or add a Docker!***
+***For Windows AND Linux you need to install redislite, currently its excluded from the package to not break the installation***
 
 
 # CASafari 🚀
