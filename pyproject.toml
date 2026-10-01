@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "CASafari"
-version = "0.1.4"
+version = "0.1.5"
 description = "A Flask and TwitchIO web application and bot"
 readme = "README.md"
 authors = [
-    { name = "c-astronomy", email = "your.email@example.com" }
+    { name = "c-astronomy", email = "castronomy@yahoo.com" }
 ]
 license = { text = "AGPL-3.0-only" }
 requires-python = ">=3.8"
@@ -36,4 +36,7 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+casafari = ["*.json"]
 
