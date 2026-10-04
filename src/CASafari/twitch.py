@@ -39,8 +39,8 @@ LOGGER: logging.Logger = logging.getLogger("Bot")
 # Consider using a .env or another form of Configuration file!
 CLIENT_ID: str = ""  # The CLIENT ID from the Twitch Dev Console bot
 CLIENT_SECRET: str = ""  # The CLIENT SECRET from the Twitch Dev Console bot
-BOT_ID = ""  # The Account ID of the bot user...
 OWNER_ID = ""  # Your personal User ID..
+BOT_ID = ""  # The Account ID of the bot user...
 
 SCOPES = [
     "chat:read",
