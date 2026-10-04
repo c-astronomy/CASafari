@@ -58,8 +58,8 @@ class Bot(commands.AutoBot):
         super().__init__(
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,
-            bot_id=BOT_ID,
             owner_id=OWNER_ID,
+            bot_id=BOT_ID,
             prefix="!",
             subscriptions=subs,
             force_subscribe=True,
