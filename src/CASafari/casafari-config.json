@@ -1,0 +1,10 @@
+{
+    "lat": "59",
+    "lon": "16",
+    "AltLim": "30",
+    "AltLimMax": "75",
+    "AzLim": "240",
+    "AzLimMax": "350",
+    "expo": "30",
+    "ip": "localhost:6379"
+}

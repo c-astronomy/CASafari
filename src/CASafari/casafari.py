@@ -13,7 +13,7 @@ import time
 from io import BytesIO
 
 def setBool():
-    auto_safari = True
+    auto_safari = False
 
 def main(r):
 
@@ -61,7 +61,7 @@ def main(r):
                 if auto_safari == False :
                     r.publish("nina:speech", f"Starting automatic safari")
 
-                auto_safari = True
+                auto_safari = False
 
                 print(f"Starting auto Safari")
                 #print(f"[CASA] 🤫 Starting auto Safari")
@@ -99,14 +99,23 @@ def main(r):
                 safariTarget = random.choice(candidate_targets)
                 last_target_name = safariTarget.get('name') #Update tracker
 
+
+                ra_deg, dec_deg = convert_for_slew(
+                    safariTarget.get('ra', 0),
+                    safariTarget.get('ra_min', 0),
+                    safariTarget.get('dec', 0),
+                    safariTarget.get('dec_min', 0)
+                )
+
+
+
                 # 1. Prepare the exact payload NINA needs
-                # Ensure these keys match what your nina.py uses for precision!
                 payload = {
                     "action": "slew",
                     "name": safariTarget.get('name', 'Unknown Safari Target'),
-                    "ra": safariTarget.get('ra'),
+                    "ra": safariTarget.get('ra', 0),
                     "ra_min": safariTarget.get('ra_min', 0),
-                    "dec": safariTarget.get('dec'),
+                    "dec": safariTarget.get('dec', 0),
                     "dec_min": safariTarget.get('dec_min', 0),
                     "is_safari": True  # Useful flag for logging
                 }
@@ -300,17 +309,22 @@ def redis_listener(r):
 
 
 
-def convert_for_slew(ra,ra_min,dec,dec_min):
+def convert_for_slew(ra, ra_min, dec, dec_min):
+    ra_total_hours = float(ra) + (float(ra_min) / 60.0)
+    slewRa_degrees = ra_total_hours * 15.0 # Hours for NINA
 
-    ra_min_converted=ra_min/60
-    slewRa=ra+ra_min_converted
-    slewRa_Converted=slewRa*15
+    dec_d = float(dec)
+    dec_m = float(dec_min)
     
-    dec_min_converted=dec_min/60
-    slewDec=dec+dec_min_converted
-    slewDec_Converted=slewDec
+    is_negative = dec_d < 0 or math.copysign(1.0, dec_d) < 0 #math.copysign
 
-    return slewRa_Converted, slewDec_Converted
+    if is_negative:
+#    if str(dec).startswith('-') or dec_d <0:
+        slewDec_degrees = dec_d - (dec_m / 60.0)
+    else:
+        slewDec_degrees = dec_d + (dec_m / 60.0)
+
+    return slewRa_degrees, slewDec_degrees
 
 
 
@@ -574,7 +588,7 @@ printParsedOuput = True
 #SHARED_DATA_LOCK = threading.Lock()
 auto_safari = False #Default is False
 #Safari autostart timer
-auto_safari_idle_threshold = 30 #Default 600   for dev test 60, for steam test 240
+auto_safari_idle_threshold = 9000 #Default 600   for dev test 60, for steam test 240
 #Just a way to protect from re-slews
 tmptarget_ra = 0
 #Run program as a loop or single shot

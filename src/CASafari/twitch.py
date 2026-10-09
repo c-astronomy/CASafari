@@ -24,6 +24,7 @@ import twitchio.web as web
 
 import redis
 import json
+import os
 
 
 if TYPE_CHECKING:
@@ -35,12 +36,35 @@ r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
 LOGGER: logging.Logger = logging.getLogger("Bot")
 
+CREDS_FILE = 'credentials.json'
 
-# Consider using a .env or another form of Configuration file!
-CLIENT_ID: str = ""  # The CLIENT ID from the Twitch Dev Console bot
-CLIENT_SECRET: str = ""  # The CLIENT SECRET from the Twitch Dev Console bot
-OWNER_ID = ""  # Your personal User ID..
-BOT_ID = ""  # The Account ID of the bot user...
+def load_credentials():
+    """Loads credentials from the JSON file or creates a default template if missing."""
+    defaults = {
+        "client_id": "",
+        "client_secret": "",
+        "owner_id": "",
+        "bot_id": "",
+        "token": ""
+    }
+    if not os.path.exists(CREDS_FILE):
+        with open(CREDS_FILE, 'w') as f:
+            json.dump(defaults, f, indent=4)
+        print("✅ Created default credentials.json file.")
+        return defaults
+    
+    with open(CREDS_FILE, 'r') as f:
+        try:
+            data = json.load(f)
+            return {**defaults, **data}
+        except json.JSONDecodeError:
+            return defaults
+
+creds = load_credentials()
+CLIENT_ID: str = creds.get('client_id', '')
+CLIENT_SECRET: str = creds.get('client_secret', '')
+OWNER_ID = creds.get('owner_id', '')
+BOT_ID = creds.get('bot_id', '')
 
 SCOPES = [
     "chat:read",
@@ -182,8 +206,10 @@ class MyComponent(commands.Component):
                     slew_payload = {
                         "action": "slew", 
                         "name": target['name'], 
-                        "ra": target['ra'], 
-                        "dec": target['dec']
+                        "ra": target.get('ra', 0), 
+                        "ra_min": target.get('ra_min', 0),
+                        "dec": target.get('dec', 0),
+                        "dec_min": target.get('dec_min', 0)
                     }
                     r.publish("nina:commands", json.dumps(slew_payload))
                     #TTS TEST, i have inconsistent ways of getting chatte name, like below and also ctx.chatter

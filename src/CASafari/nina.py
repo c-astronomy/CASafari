@@ -3,6 +3,7 @@ import json
 import time
 import redis.asyncio as redis
 import aiohttp
+import math
 
 # --- CONFIG ---
 NINA_API = "http://192.168.0.41:1888/v2/api" #This needs to be the machine ip for NINA, not local 
@@ -121,6 +122,23 @@ async def redis_listener(r_client):
 
 
 
+def convert_for_slew(ra, ra_min, dec, dec_min):
+    ra_total_hours = float(ra) + (float(ra_min) / 60.0)
+    slewRa_degrees = ra_total_hours * 15.0
+
+    dec_d = float(dec)
+    dec_m = float(dec_min)
+    
+    is_negative = dec_d < 0 or math.copysign(1.0, dec_d) < 0
+
+    if is_negative:
+        slewDec_degrees = dec_d - (dec_m / 60.0)
+    else:
+        slewDec_degrees = dec_d + (dec_m / 60.0)
+
+    return slewRa_degrees, slewDec_degrees
+
+
 async def execute_nina_command(cmd_data, r_client):
     """The safety-gated execution logic."""
 
@@ -153,21 +171,6 @@ async def execute_nina_command(cmd_data, r_client):
         print(f"🚫 Target/Command rejected: System busy with another operation (Target: {target_name}).")
         return  # Drop command immediately, don't queue or wait
 
-    # ALLOW 'abort' to bypass the busy check
-#    if action != "abort":
-#        timeout_counter = 0
-#        while state["is_slewing"] or state["camera_busy"]:
-#            if timeout_counter % 5 == 0: # Print every 5 seconds to avoid spam
-#                print(f"⏳ System busy (Slew:{state['is_slewing']} Cam:{state['camera_busy']})... holding {action}")
-#            
-#            await asyncio.sleep(1)
-#            timeout_counter += 1
-#            
-#            # Optional: Add a 60-second safety timeout so it doesn't stuck forever
-#            if timeout_counter > 60:
-#                print("⚠️ Command Timeout: Force-releasing gate.")
-#                break
-
     # 4. Immediate State Lock
     if action == "slew":
         state["is_slewing"] = True
@@ -183,20 +186,15 @@ async def execute_nina_command(cmd_data, r_client):
     async with aiohttp.ClientSession() as session:
 
         if action == "slew":
-            # 1. Get raw values (Hours for RA, Degrees for Dec)
+            # 1. Get raw values (Hours for RA, Degrees for Dec) with minutes included
             raw_ra_h = float(cmd_data.get('ra', 0))
             raw_ra_m = float(cmd_data.get('ra_min', 0))
             
             raw_dec_d = float(cmd_data.get('dec', 0))
             raw_dec_m = float(cmd_data.get('dec_min', 0))
             
-            # 2. Convert to Precise Decimal Degrees
-            # RA: (Hours + Minutes/60) * 15
-            precise_ra = (raw_ra_h + (raw_ra_m / 60.0)) * 15.0
-            
-            # DEC: Degrees + Minutes/60 (Handling negative declination)
-            sign = -1 if raw_dec_d < 0 else 1
-            precise_dec = raw_dec_d + (sign * (raw_dec_m / 60.0))
+            # 2. Convert to Precise Decimal Degrees using robust conversion
+            precise_ra, precise_dec = convert_for_slew(raw_ra_h, raw_ra_m, raw_dec_d, raw_dec_m)
             
             # 3. Prepare the URL
             endpoint = f"{NINA_API}/equipment/mount/slew"
