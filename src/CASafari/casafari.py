@@ -8,8 +8,6 @@ import random
 import json
 import redis
 import threading
-import json
-import time
 from io import BytesIO
 
 def setBool():
