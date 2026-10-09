@@ -13,6 +13,7 @@ import time
 from io import BytesIO
 
 def setBool():
+    global auto_safari
     auto_safari = False
 
 def main(r):
@@ -48,6 +49,22 @@ def main(r):
             draw_terminal(available_targets)
 
         #Trigger auto safari test
+        #Fetch NINA status from Redis
+
+        status_raw = r.get("nina:status")
+        nina_busy = False
+        if status_raw:
+            try:
+                status_data = json.loads(status_raw)
+                nina_busy = status_data.get("busy", False)
+            except Exception:
+                pass
+
+
+        if nina_busy:
+            r.set("nina:last_user_action", time.time())
+
+
 
         #print("Debug 0")
         last_action = r.get("nina:last_user_action")
@@ -61,7 +78,7 @@ def main(r):
                 if auto_safari == False :
                     r.publish("nina:speech", f"Starting automatic safari")
 
-                auto_safari = False
+                auto_safari = True
 
                 print(f"Starting auto Safari")
                 #print(f"[CASA] 🤫 Starting auto Safari")
@@ -293,15 +310,17 @@ def redis_listener(r):
 
 
                 if data == "!safari" :
-                    #with SHARED_DATA_LOCK:
-                    #auto_safari = True
-                    #setBool()
                     
-                    print("[PYTHON] Check if !safari auto_safari gets triggered")
+                    auto_safari = True
+                    #r.publish("nina:speech", "Automatic safari enabled")
+                    print("[PYTHON] Auto Safari enabled via Redis command")
 
                 if data == "!stopsafari" :
-                    #loop = False
-                    print("[PYTHON] Check if !stopsafari gets triggered.")
+                    auto_safari = False
+                    r.set("nina:last_user_action", time.time()) #Reset idle timer
+                    #r.publish("nina:speech", "Automatic safari stopped")
+                    print("[PYTHON] Auto Safari stopped via Redis command")
+                    
 
             except Exception as e:
                 print(f"[PYTHON LISTENER] Error processing message: {e}")
@@ -588,7 +607,7 @@ printParsedOuput = True
 #SHARED_DATA_LOCK = threading.Lock()
 auto_safari = False #Default is False
 #Safari autostart timer
-auto_safari_idle_threshold = 9000 #Default 600   for dev test 60, for steam test 240
+auto_safari_idle_threshold = 240 #Default 600   for dev test 60, for steam test 240
 #Just a way to protect from re-slews
 tmptarget_ra = 0
 #Run program as a loop or single shot
