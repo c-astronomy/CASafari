@@ -1,7 +1,6 @@
 pycurl
-redis
-redislite
 aiohttp
+numpy
 requests
 websocket-client
 twitchio[starlette]
