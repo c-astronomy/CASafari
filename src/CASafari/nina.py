@@ -1,9 +1,10 @@
 import asyncio
 import json
 import time
-import redis.asyncio as redis
 import aiohttp
 import math
+
+from caclientasync import redis
 
 # --- CONFIG ---
 NINA_API = "http://192.168.0.41:1888/v2/api" #This needs to be the machine ip for NINA, not local 

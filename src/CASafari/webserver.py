@@ -1,8 +1,10 @@
 from flask import Flask, render_template_string, request, redirect
-import redis
+from caclient import redis
 import json
 import time
 import os
+
+
 
 app = Flask(__name__)
 

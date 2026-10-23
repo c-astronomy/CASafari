@@ -7,11 +7,10 @@
 
 import asyncio
 import json
-import redis.asyncio as redis
 from pocket_tts import TTSModel
 import sounddevice as sd
 import numpy as np
-
+from caclientasync import redis
 
 #I might want another channel for this, also not sure what module should handle the tts send, maybe hte one that has the list?
 

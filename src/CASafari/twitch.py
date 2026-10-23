@@ -22,10 +22,10 @@ from twitchio.web import AiohttpAdapter
 
 import twitchio.web as web
 
-import redis
 import json
 import os
 
+from caclientasync import redis
 
 if TYPE_CHECKING:
     import sqlite3
@@ -211,7 +211,7 @@ class MyComponent(commands.Component):
                         "dec": target.get('dec', 0),
                         "dec_min": target.get('dec_min', 0)
                     }
-                    r.publish("nina:commands", json.dumps(slew_payload))
+                    await r.publish("nina:commands", json.dumps(slew_payload))
                     #TTS TEST, i have inconsistent ways of getting chatte name, like below and also ctx.chatter
                     #r.publish("nina:speech", f"{payload.chatter.name} is Slewing to {target['name']}")
 
@@ -233,7 +233,7 @@ class MyComponent(commands.Component):
                    "name": target['name'],
                    "exposure": exposure_time
                 }
-                r.publish("nina:commands", json.dumps(image_payload))
+                await r.publish("nina:commands", json.dumps(image_payload))
                 #r.publish("nina:speech", f"{ctx.chatter} is starting an sequence of {exposure_time} second exposures of {target['name']}")
                 await ctx.reply(f"{ctx.chatter} is starting an sequence of {exposure_time} second exposures of {target['name']}!")
             else:
@@ -253,7 +253,7 @@ class MyComponent(commands.Component):
     @commands.command()
     @commands.cooldown(rate=1, per=10, key=commands.BucketType.channel)
     async def list(self, ctx: commands.Context) -> None:
-        r.publish("twitch:updates", json.dumps("!list"))
+        await r.publish("twitch:updates", json.dumps("!list"))
         await asyncio.sleep(1)
         raw_data = r.get("nina:available_targets")
         if raw_data:
@@ -261,7 +261,7 @@ class MyComponent(commands.Component):
             if targets:
                 target_names = ", ".join([t['trigger'] for t in targets])
                 await ctx.send(f"| Commands: !list !capture || 🔭 Available targets: {target_names}")
-                r.publish("nina:speech", f"{ctx.chatter} , Available targets are listed in chat, an example trigger could be: !slew_andromeda")
+                await r.publish("nina:speech", f"{ctx.chatter} , Available targets are listed in chat, an example trigger could be: !slew_andromeda")
 
 
 
@@ -279,19 +279,19 @@ class MyComponent(commands.Component):
     @commands.cooldown(rate=1, per=10, key=commands.BucketType.channel)
     async def equipment(self, ctx: commands.Context) -> None:
         await ctx.send("Telescope: Skywatcher 80ed | Mount: Sal-33 / Umi17r| Camera: Nikon D5000 / Touptek 678m")
-        r.publish("nina:speech", f"Telescope: Skywatcher 80ed | Mount: Sal-33 / Umi17r | Camera: Nikon D5000 / Touptek 678m")
+        await r.publish("nina:speech", f"Telescope: Skywatcher 80ed | Mount: Sal-33 / Umi17r | Camera: Nikon D5000 / Touptek 678m")
 
     @commands.command(invoke_fallback=True)
     @commands.cooldown(rate=1, per=10, key=commands.BucketType.channel)
     async def slew_carina(self, ctx: commands.Context) -> None:
         await ctx.send("Aussie Aussie Aussie! Oi Oi Oi!")
-        r.publish("nina:speech", f"Aussie Aussie Aussie! Oi Oi Oi!")
+        await r.publish("nina:speech", f"Aussie Aussie Aussie! Oi Oi Oi!")
 
     @commands.command(invoke_fallback=True)
     @commands.cooldown(rate=1, per=10, key=commands.BucketType.channel)
     async def slew_sun(self, ctx: commands.Context) -> None:
         await ctx.send("Ikarus Daedalus was watching through a telescope...")
-        r.publish("nina:speech", f"Ikarus Daedalus was watching through a telescope...")
+        await r.publish("nina:speech", f"Ikarus Daedalus was watching through a telescope...")
 
 
 async def setup_database(db: asqlite.Pool) -> tuple[list[tuple[str, str]], list[eventsub.SubscriptionPayload]]:

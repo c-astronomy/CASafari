@@ -6,9 +6,9 @@ import pycurl
 import os
 import random
 import json
-import redis
 import threading
 from io import BytesIO
+from caclient import redis
 
 def setBool():
     global auto_safari
