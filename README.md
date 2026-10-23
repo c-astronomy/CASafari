@@ -21,7 +21,7 @@ This project is proudly licensed under the **GNU Affero General Public License v
 ### Developer Installation (Via Git)
 Clone the repository and install it locally in **editable mode**:
 ```bash
-git clone https://github.com/your-username/CASafari
+git clone https://github.com/c-astronomy/CASafari
 cd CASafari
 pip install -e .
 ```
