@@ -68,23 +68,25 @@ Contains your celestial targets list, coordinates, and chat trigger commands (e.
 
 ```text
 CASafari/
-├── pyproject.toml                  # Package metadata & dependencies
+├── .github/
+├── src/
+│   └── CASafari/
+│       ├── __init__.py             # Python package initializer
+│       ├── caclient.py             # Synchronous custom Redis client wrapper
+│       ├── caclientasync.py        # Asynchronous custom Redis client wrapper
+│       ├── casafari-config.json    # Observer location, coordinates, and limits
+│       ├── casafari.py             # Main automation hub & auto-safari loop
+│       ├── caserver.py             # Native cross-platform Redis-compatible server
+│       ├── nina.py                 # N.I.N.A. API bridge and equipment monitor
+│       ├── targetlist.json         # Celestial target database & chat triggers
+│       ├── tts.py                  # Experimental Pocket-TTS audio worker
+│       ├── twitch.py               # TwitchIO chat bot and command router
+│       └── webserver.py            # Flask master control dashboard UI
 ├── LICENSE                         # GNU AGPLv3 License text
 ├── README.md                       # Documentation and usage guide
-├── credentials.json                # Twitch authentication credentials
-├── casafari-config.json            # Observer location and mount limits
-├── targetlist.json                 # Celestial target database
-├── caclient.py                     # Synchronous custom Redis client
-├── caclientasync.py                # Asynchronous custom Redis client
-├── caserver.py                     # Native cross-platform Redis-compatible server
-├── casafari.py                     # Main runtime hub & auto-safari loop
-├── nina.py                         # N.I.N.A. API bridge and equipment monitor
-├── twitch.py                       # TwitchIO chat bot and command router
-├── tts.py                          # Experimental Pocket-TTS audio worker
-└── webserver.py                    # Flask master control dashboard UI
+├── pyproject.toml                  # Package metadata & dependencies
+└── requirements.txt                # Legacy/additional requirements backup
 ```
-
----
 
 ## 🚀 Execution & Startup Order
 
