@@ -22,7 +22,7 @@ def setup_process_logging(name):
     sys.stderr = f
 
 def run_caserver():
-    setup_process_logging("caserver")
+    #setup_process_logging("caserver")    #Comment out to make CASafari output in terminal
     print("🚀 Starting Built-in CAServer (Redis-compatible)...")
     try:
         asyncio.run(CAServer().start())
