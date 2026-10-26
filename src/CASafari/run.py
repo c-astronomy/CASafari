@@ -46,7 +46,7 @@ def run_twitch():
         print(f"❌ Twitch Bot error: {e}")
 
 def run_casafari():
-    setup_process_logging("casafari")
+    #setup_process_logging("casafari")
     print("🚀 Starting Automation Engine (CASafari)...")
     time.sleep(2) # Give CAServer a moment to start up
     try:
