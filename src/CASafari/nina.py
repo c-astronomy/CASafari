@@ -7,8 +7,7 @@ import math
 from caclientasync import redis
 
 # --- CONFIG ---
-NINA_API = "http://192.168.0.41:1888/v2/api" #This needs to be the machine ip for NINA, not local 
-#NINA_API = "http://localhost:1888/v2/api" #This needs to be the machine ip for NINA, not local 
+NINA_API = "http://localhost:1888/v2/api" #This needs to be the machine ip for NINA.
 REDIS_URL = "redis://localhost:6379"
 HEARTBEAT_INTERVAL = 2 # Seconds
 
