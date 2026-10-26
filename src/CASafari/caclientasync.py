@@ -91,6 +91,16 @@ class CAClient:
             self.writer = None
             return None
 
+    async def incr(self, key):
+        val = await self.get(key)
+        try:
+            num = int(val) if val is not None else 0
+        except ValueError:
+            num = 0
+        num += 1
+        await self.set(key, str(num))
+        return num
+
     async def publish(self, channel, message):
         await self._ensure_connection()
         if not self.writer:

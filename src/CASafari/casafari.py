@@ -2,7 +2,6 @@ import datetime as dt
 import math
 import time
 import subprocess
-import pycurl
 import os
 import random
 import json
@@ -38,10 +37,21 @@ def main(r):
 
     print("[PYTHON MAIN] Subscription thread started. Continuing main program logic...")
 
+    if r.get("status:casa_enabled") is None:
+        r.set("status:casa_enabled", "true")
+
     #Not sure if i want to load everythin here yet
 
     while True :
         load_config() #Not sure this is good idea, spamming reads
+        r.set("heartbeat:casafari", time.time())
+
+        # Check if Automation Engine is enabled via web dashboard / Redis
+        casa_enabled_raw = r.get("status:casa_enabled")
+        if casa_enabled_raw and casa_enabled_raw.lower() == "false":
+            auto_safari = False
+            time.sleep(5)
+            continue
 
         if terminalMode :
             draw_terminal(available_targets)
@@ -151,6 +161,11 @@ def main(r):
 
                 # 2. Save for reference (Web GUI)
                 r.set("nina:current_safari_target", json.dumps(payload))
+                r.set("nina:current_target", json.dumps(payload))
+                try:
+                    r.incr("session:targets_slewed")
+                except Exception:
+                    pass
 
                 # 3. Trigger NINA immediately
                 r.publish("nina:commands", json.dumps(payload))
@@ -308,15 +323,14 @@ def redis_listener(r):
 
 
                 if data == "!safari" :
-                    
                     auto_safari = True
-                    #r.publish("nina:speech", "Automatic safari enabled")
+                    r.set("status:casa_enabled", "true")
                     print("[PYTHON] Auto Safari enabled via Redis command")
 
                 if data == "!stopsafari" :
                     auto_safari = False
+                    r.set("status:casa_enabled", "false")
                     r.set("nina:last_user_action", time.time()) #Reset idle timer
-                    #r.publish("nina:speech", "Automatic safari stopped")
                     print("[PYTHON] Auto Safari stopped via Redis command")
                     
 

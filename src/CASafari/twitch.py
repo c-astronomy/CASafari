@@ -159,6 +159,10 @@ class Bot(commands.AutoBot):
 
     async def event_ready(self) -> None:
         LOGGER.info("Successfully logged in as: %s", self.bot_id)
+        try:
+            await r.set("heartbeat:twitch", time.time())
+        except Exception:
+            pass
 
 
 class MyComponent(commands.Component):
@@ -194,15 +198,25 @@ class MyComponent(commands.Component):
             return
 
         text = payload.text.lower().strip()
+
+        if text.startswith('!'):
+            try:
+                await r.incr("session:commands_processed")
+            except Exception:
+                pass
         
         if text.startswith('!slew_'):
-            raw_data = r.get("nina:available_targets")
+            raw_data = await r.get("nina:available_targets")
             if raw_data:
                 targets = json.loads(raw_data)
                 target = next((t for t in targets if t['trigger'].lower() == text), None)
 
                 if target:
-                    r.set("nina:current_target", json.dumps(target))
+                    await r.set("nina:current_target", json.dumps(target))
+                    try:
+                        await r.incr("session:targets_slewed")
+                    except Exception:
+                        pass
                     slew_payload = {
                         "action": "slew", 
                         "name": target['name'], 
@@ -224,7 +238,7 @@ class MyComponent(commands.Component):
     @commands.command()
     @commands.cooldown(rate=1, per=10, key=commands.BucketType.channel)
     async def capture(self, ctx: commands.Context) -> None:
-            raw_target = r.get("nina:current_target")
+            raw_target = await r.get("nina:current_target")
             if raw_target:
                 target = json.loads(raw_target)
                 exposure_time = 60
@@ -234,6 +248,10 @@ class MyComponent(commands.Component):
                    "exposure": exposure_time
                 }
                 await r.publish("nina:commands", json.dumps(image_payload))
+                try:
+                    await r.incr("session:captures")
+                except Exception:
+                    pass
                 #r.publish("nina:speech", f"{ctx.chatter} is starting an sequence of {exposure_time} second exposures of {target['name']}")
                 await ctx.reply(f"{ctx.chatter} is starting an sequence of {exposure_time} second exposures of {target['name']}!")
             else:
@@ -247,6 +265,47 @@ class MyComponent(commands.Component):
 
     @commands.command()
     @commands.cooldown(rate=1, per=10, key=commands.BucketType.channel)
+    async def stats(self, ctx: commands.Context) -> None:
+
+
+        start_time_raw = await r.get("session:start_time")
+        start_time = float(start_time_raw or time.time())
+
+
+        #        start_time = float(r.get("session:start_time") or time.time())
+        uptime_seconds = int(time.time() - start_time)
+        hours = uptime_seconds // 3600
+        minutes = (uptime_seconds % 3600) // 60
+
+        targets_slewed = await r.get("session:targets_slewed") or "0"
+        captures = await r.get("session:captures") or "0"
+        commands_count = await r.get("session:commands_processed") or "0"
+
+
+        raw_target = (await r.get("nina:current_target")) or (await r.get("nina:current_safari_target"))
+
+        current_target = "None"
+        if raw_target:
+            try:
+                t_data = json.loads(raw_target)
+                current_target = t_data.get('name', 'Unknown')
+            except Exception:
+                pass
+
+        casa_enabled = await r.get("status:casa_enabled") or "true"
+        auto_status = "ON" if casa_enabled.lower() == "true" else "OFF"
+
+        stat_msg = (
+            f"🔭 CASafari Stats | Uptime: {hours}h {minutes}m | "
+            f"Targets Slewed: {targets_slewed} | Captures: {captures} | "
+            f"Current: {current_target} | Auto: {auto_status}"
+        )
+        await ctx.reply(stat_msg)
+        await r.publish("nina:speech", f"Session uptime is {hours} hours and {minutes} minutes. Targets slewed: {targets_slewed}. Captures taken: {captures}.")
+
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=10, key=commands.BucketType.channel)
     async def hi(self, ctx: commands.Context) -> None:
         await ctx.reply(f"Hi {ctx.chatter}!")
 
@@ -255,12 +314,12 @@ class MyComponent(commands.Component):
     async def list(self, ctx: commands.Context) -> None:
         await r.publish("twitch:updates", json.dumps("!list"))
         await asyncio.sleep(1)
-        raw_data = r.get("nina:available_targets")
+        raw_data = await r.get("nina:available_targets")
         if raw_data:
             targets = json.loads(raw_data)
             if targets:
                 target_names = ", ".join([t['trigger'] for t in targets])
-                await ctx.send(f"| Commands: !list !capture || 🔭 Available targets: {target_names}")
+                await ctx.send(f"| Commands: !list !capture !stats || 🔭 Available targets: {target_names}")
                 await r.publish("nina:speech", f"{ctx.chatter} , Available targets are listed in chat, an example trigger could be: !slew_andromeda")
 
 

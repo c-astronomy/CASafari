@@ -122,9 +122,14 @@ HTML_TEMPLATE = """
             <div class="stat-item"><span class="stat-label">Az Limit Min</span>{{ az_lim }}</div>
             <div class="stat-item"><span class="stat-label">Az Limit Max</span>{{ az_lim_max }}</div>
             <div class="stat-item"><span class="stat-label">Local Time</span>{{ local_time }}</div>
+            <div class="stat-item"><span class="stat-label">Session Uptime</span>{{ session_uptime }}</div>
+            <div class="stat-item"><span class="stat-label">Targets Slewed</span>{{ targets_slewed }}</div>
+            <div class="stat-item"><span class="stat-label">Captures Taken</span>{{ captures_taken }}</div>
+            <div class="stat-item"><span class="stat-label">Commands Processed</span>{{ commands_processed }}</div>
+            <div class="stat-item"><span class="stat-label">Current Target</span>{{ current_target }}</div>
             <div class="stat-item"><span class="stat-label">Connections</span>
-                <small><span class="status-dot"></span>CASafari</small>
-                <small><span class="status-dot" style="background: var(--success);"></span>Twitch</small>
+                <small><span id="casafari-dot" class="status-dot" style="background: {{ casafari_dot }};"></span>CASafari</small>
+                <small><span id="twitch-dot" class="status-dot" style="background: {{ twitch_dot }};"></span>Twitch</small>
                 <small><span id="nina-dot" class="status-dot" style="background: {{ nina_dot }};"></span>NINA</small>
                 <small><span id="redis-dot" class="status-dot" style="background: {{ redis_dot }};"></span>Redis</small>
                 <small><span id="slew-dot" class="status-dot" style="background: {{ slew_dot }};"></span>Mount slewing</small>
@@ -204,14 +209,6 @@ HTML_TEMPLATE = """
 
         <div class="card">
             <h3>System Master Control</h3>
-            
-            <div style="margin-bottom: 20px;">
-                <small style="color: #888; display: block; margin-bottom: 5px;">Twitch Bot Status</small>
-                <form method="POST" class="btn-group">
-                    <button type="submit" name="action" value="start_twitch" style="background: var(--success);">START</button>
-                    <button type="submit" name="action" value="stop_twitch" class="btn-stop">STOP</button>
-                </form>
-            </div>
 
             <div>
                 <small style="color: #888; display: block; margin-bottom: 5px;">Automation Engine (Casafari)</small>
@@ -250,6 +247,9 @@ HTML_TEMPLATE = """
                 .then(response => response.json())
                 .then(data => {
                     // Update the background colors of the dots
+                    document.getElementById('casafari-dot').style.background = data.casafari_dot;
+                    document.getElementById('twitch-dot').style.background = data.twitch_dot;
+                    document.getElementById('redis-dot').style.background = data.redis_dot;
                     document.getElementById('nina-dot').style.background = data.nina_dot;
                     document.getElementById('slew-dot').style.background = data.slew_dot;
                     document.getElementById('camera-dot').style.background = data.camera_dot;
@@ -289,23 +289,35 @@ def get_status():
     is_slewing = data.get("is_slewing", False)
     is_imaging = data.get("camera_busy", False)
 
-    if not is_online:
-        # Everything is dark if NINA isn't found
-        slew_dot = "#000000"
-        camera_dot = "#000000"
-    else:
-        # Mount Logic: Red if moving, Green if parked/ready
-        slew_dot = "var(--danger)" if is_slewing else "var(--success)"
-    
-        # Camera Logic: Orange if exposing, Green if idle/ready
-        camera_dot = "#e67e22" if is_imaging else "var(--success)"
-    
-    # 2. Return ONLY the colors as JSON
+    slew_dot = "#444" if not is_online else ("var(--danger)" if is_slewing else "var(--success)")
+    camera_dot = "#444" if not is_online else ("#e67e22" if is_imaging else "var(--success)")
+
+    now = time.time()
+    casa_hb = r.get("heartbeat:casafari")
+    casafari_online = False
+    if casa_hb:
+        try:
+            casafari_online = (now - float(casa_hb)) < 45
+        except Exception:
+            pass
+
+    twitch_hb = r.get("heartbeat:twitch")
+    twitch_online = False
+    if twitch_hb:
+        try:
+            twitch_online = (now - float(twitch_hb)) < 60
+        except Exception:
+            pass
+
+    # 2. Return colors as JSON
     return {
         "nina_dot": "var(--success)" if is_online else "var(--danger)",
+        "redis_dot": "var(--success)",
+        "casafari_dot": "var(--success)" if casafari_online else "var(--danger)",
+        "twitch_dot": "var(--success)" if twitch_online else "var(--danger)",
         "slew_dot": slew_dot,
         "camera_dot": camera_dot,
-        "local_time": time.strftime("%H:%M:%S") #This is currently only updating when action is taken. should be sideral from casfari also, not normal time
+        "local_time": time.strftime("%H:%M:%S")
     }
 
 
@@ -392,12 +404,6 @@ def index():
             #return redirect('/')
 
 
-            #Some start switches
-        elif action == "start_twitch":
-            r.set("status:twitch_enabled", "true")
-        elif action == "stop_twitch":
-            r.set("status:twitch_enabled", "false")
-
         elif action == "start_casa":
             r.set("status:casa_enabled", "true")
         elif action == "stop_casa":
@@ -413,6 +419,37 @@ def index():
     # 2. Define colors
     is_online = nina_data.get("online", False)
     
+    start_time = float(r.get("session:start_time") or time.time())
+    uptime_seconds = int(time.time() - start_time)
+    hours = uptime_seconds // 3600
+    minutes = (uptime_seconds % 3600) // 60
+    uptime_str = f"{hours}h {minutes}m"
+
+    raw_t = r.get("nina:current_target") or r.get("nina:current_safari_target")
+    current_target_name = "None"
+    if raw_t:
+        try:
+            current_target_name = json.loads(raw_t).get('name', 'None')
+        except Exception:
+            pass
+
+    now = time.time()
+    casa_hb = r.get("heartbeat:casafari")
+    casafari_online = False
+    if casa_hb:
+        try:
+            casafari_online = (now - float(casa_hb)) < 45
+        except Exception:
+            pass
+
+    twitch_hb = r.get("heartbeat:twitch")
+    twitch_online = False
+    if twitch_hb:
+        try:
+            twitch_online = (now - float(twitch_hb)) < 60
+        except Exception:
+            pass
+
     # Logic: If offline, dots are Red. If online, Slewing/Imaging are Yellow if active, or Grey if idle.
     context = {
         "lon": r.get("config:lon") or "Not Set",
@@ -422,12 +459,17 @@ def index():
         "az_lim": r.get("config:az_lim") or "240", #360 for some reason, ill try set it to normal 240
         "az_lim_max": r.get("config:az_lim_max") or "350",
         "local_time": time.strftime("%H:%M:%S"),
+        "session_uptime": uptime_str,
+        "targets_slewed": r.get("session:targets_slewed") or "0",
+        "captures_taken": r.get("session:captures") or "0",
+        "commands_processed": r.get("session:commands_processed") or "0",
+        "current_target": current_target_name,
         
         # Connection Dot Colors
         "nina_dot": "var(--success)" if is_online else "var(--danger)",
         "redis_dot": "var(--success)", # If Flask is running, Redis is up
-        "twitch_dot": "var(--success)", # You can link this to your twitch bot status later
-        "casafari_dot": "var(--success)",
+        "twitch_dot": "var(--success)" if twitch_online else "var(--danger)",
+        "casafari_dot": "var(--success)" if casafari_online else "var(--danger)",
         
         # Activity Dot Colors (Yellow/Orange if active, else dark grey)
         "slew_dot": "#f1c40f" if nina_data.get("is_slewing") else "#444",
