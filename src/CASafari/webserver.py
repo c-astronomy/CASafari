@@ -18,7 +18,7 @@ CONFIG_FILE = 'casafari-config.json'
 def load_config():
     defaults = {
         "lat": "59", "lon": "16", "AltLim": "30", "AltLimMax": "75", 
-        "AzLim": "240", "AzLimMax": "350", "expo": "30", "ip": "localhost:6379"
+        "AzLim": "240", "AzLimMax": "350", "expo": "30", "ip": "localhost:1888"
     }
     if not os.path.exists(CONFIG_FILE):
         return defaults
