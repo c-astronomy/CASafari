@@ -45,7 +45,7 @@ Used by the Twitch bot and web dashboard for API access:
 ```
 
 ### 2. `casafari-config.json`
-Defines your geographic coordinates, mount tracking boundaries, and N.I.N.A. integration endpoint:
+Defines your geographic coordinates, mount tracking boundaries, and N.I.N.A. integration endpoint (Note: N.I.N.A. API port defaults to `1888`):
 ```json
 {
   "lat": 59.6,
@@ -55,12 +55,25 @@ Defines your geographic coordinates, mount tracking boundaries, and N.I.N.A. int
   "AzLim": 230,
   "AzLimMax": 350,
   "expo": 30,
-  "ip": "localhost:1888"
+  "ip": "localhost:1888",
+  "platesolve": "false",
+  "sequence_mode": "false"
 }
 ```
 
 ### 3. `targetlist.json`
 Contains your celestial targets list, coordinates, and chat trigger commands (e.g., `!slew_andromeda`).
+
+---
+
+## 🎛️ New Features & Master Control Toggles
+
+CASafari includes powerful toggle controls managed directly via the Web Dashboard **System Master Control** card:
+
+1. **Automation Engine (Casafari)** (`ON` / `OFF`): Manages autonomous target rotation when Twitch chat is idle.
+2. **Plate Solve & Center** (`ON` / `OFF`): When enabled, both auto-safari and triggered slews (`!slew_...`) automatically trigger N.I.N.A. plate solving and centering (`/framing/center`) after slewing.
+3. **Sequence Mode** (`ON` / `OFF`): When enabled, N.I.N.A. executes full target sequences (`/sequence/reset` and `/sequence/start`) instead of standard 5-second preview captures. When disabled, the legacy preview capture method is used.
+4. **Chat Command `!stats`**: Live session telemetry tracking uptime, targets slewed, captures taken, current target, and automation status.
 
 ---
 
@@ -90,29 +103,18 @@ CASafari/
 
 ## 🚀 Execution & Startup Order
 
-⚠️ **Important:** The startup order is critical for proper inter-process communication.
+You can start the entire ecosystem with a single command (`python run.py`), which spawns all background workers and keeps CASafari's terminal output visible for real-time visual monitoring:
 
-1. **Step 1 (Mandatory First): Start `caserver.py`**
-   ```bash
-   python caserver.py
-   ```
-2. **Step 2 (Recommended Second): Start `webserver.py`**
-   ```bash
-   python webserver.py
-   ```
-3. **Steps 3–5 (Remaining Order is Flexible):**
-   * **Start the N.I.N.A. Automation Bridge:**
-     ```bash
-     python nina.py
-     ```
-   * **Start the Core Automation Hub (Casafari):**
-     ```bash
-     python casafari.py
-     ```
-   * **Start the Twitch Chat Bot:**
-     ```bash
-     python twitch.py
-     ```
+```bash
+python run.py
+```
+
+Or start processes individually:
+1. **Built-in Redis Server (`caserver.py`)**: `python caserver.py`
+2. **Web Dashboard (`webserver.py`)**: `python webserver.py` (runs on http://0.0.0.0:5000)
+3. **N.I.N.A. Automation Bridge (`nina.py`)**: `python nina.py` (communicates with N.I.N.A. on port `1888`)
+4. **Automation Engine (`casafari.py`)**: `python casafari.py`
+5. **Twitch Chat Bot (`twitch.py`)**: `python twitch.py`
 
 ---
 

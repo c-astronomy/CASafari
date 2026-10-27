@@ -22,7 +22,7 @@ def setup_process_logging(name):
     sys.stderr = f
 
 def run_caserver():
-    #setup_process_logging("caserver")    #Comment out to make CASafari output in terminal
+    setup_process_logging("caserver")
     print("🚀 Starting Built-in CAServer (Redis-compatible)...")
     try:
         asyncio.run(CAServer().start())
@@ -46,7 +46,7 @@ def run_twitch():
         print(f"❌ Twitch Bot error: {e}")
 
 def run_casafari():
-    setup_process_logging("casafari")
+    #setup_process_logging("casafari")
     print("🚀 Starting Automation Engine (CASafari)...")
     time.sleep(2) # Give CAServer a moment to start up
     try:
