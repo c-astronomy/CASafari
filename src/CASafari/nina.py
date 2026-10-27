@@ -3,6 +3,7 @@ import json
 import time
 import aiohttp
 import math
+import os
 
 from caclientasync import redis
 
@@ -10,6 +11,16 @@ from caclientasync import redis
 NINA_API = "http://localhost:1888/v2/api" #This needs to be the machine ip for NINA.
 REDIS_URL = "redis://localhost:6379"
 HEARTBEAT_INTERVAL = 2 # Seconds
+
+def get_config_value(key, default="false"):
+    if os.path.exists('casafari-config.json'):
+        try:
+            with open('casafari-config.json', 'r') as f:
+                config = json.load(f)
+                return str(config.get(key, default)).lower() == "true"
+        except Exception:
+            pass
+    return str(default).lower() == "true"
 
 # Global state tracker to avoid NameErrors in your heartbeat
 state = {
@@ -238,15 +249,42 @@ async def execute_nina_command(cmd_data, r_client):
                 print("Slew complete. Settling for 3 seconds...")
                 await asyncio.sleep(3)
 
-                # 5. SWITCH TO IMAGING AND CAPTURE
-                await session.get(f"{NINA_API}/application/switch-tab?tab=imaging")
-                await asyncio.sleep(0.5)
-                
-                #5 sec usually, ill up ot now for test
-                print("Taking 5s preview...")
-                async with session.get(f"{NINA_API}/equipment/camera/capture?duration=5") as resp:
-                    print("Preview triggered!")
-                    await asyncio.sleep(5) #ILL HARDCODE THIS TO PREVIEW TIME ATM
+                # 5. PLATE SOLVE CHECK (Toggle Option)
+                if get_config_value("platesolve", "false"):
+                    print("🔭 Plate Solve & Center enabled. Triggering plate solve...")
+                    try:
+                        async with session.get(f"{NINA_API}/framing/center") as solve_resp:
+                            if solve_resp.status in [200, 202, 204]:
+                                print("✅ Plate solve & center triggered successfully!")
+                            else:
+                                text = await solve_resp.text()
+                                print(f"⚠️ Plate solve/center returned status {solve_resp.status}: {text}")
+                    except Exception as pe:
+                        print(f"❌ Error during plate solve/center: {pe}")
+                    await asyncio.sleep(3)
+
+                # 6. POST-SLEW ACTION: SEQUENCE MODE vs PREVIEW CAPTURE (Toggle Option)
+                if get_config_value("sequence_mode", "false"):
+                    print("🚀 Sequence Mode enabled: Resetting and starting sequence...")
+                    await session.get(f"{NINA_API}/application/switch-tab?tab=imaging")
+                    await asyncio.sleep(0.5)
+                    async with session.get(f"{NINA_API}/sequence/reset") as seq_resp:
+                        if seq_resp.status in [200, 202, 204]:
+                            print("✅ NINA sequence reset!")
+                    await asyncio.sleep(0.5)
+                    async with session.get(f"{NINA_API}/sequence/start") as seq_start:
+                        if seq_start.status in [200, 202, 204]:
+                            print("🚀 NINA sequence started successfully!")
+                else:
+                    # Old way: Preview capture
+                    await session.get(f"{NINA_API}/application/switch-tab?tab=imaging")
+                    await asyncio.sleep(0.5)
+                    
+                    #5 sec usually, ill up ot now for test
+                    print("Taking 5s preview...")
+                    async with session.get(f"{NINA_API}/equipment/camera/capture?duration=5") as resp:
+                        print("Preview triggered!")
+                        await asyncio.sleep(5) #ILL HARDCODE THIS TO PREVIEW TIME ATM
 
             except Exception as e:
                 print(f"❌ Error in slew chain: {e}")

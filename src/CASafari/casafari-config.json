@@ -6,5 +6,7 @@
     "AzLim": "240",
     "AzLimMax": "350",
     "expo": "30",
-    "ip": "localhost:6379"
+    "ip": "localhost:1888",
+    "platesolve": "false",
+    "sequence_mode": "false"
 }

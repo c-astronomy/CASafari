@@ -18,7 +18,8 @@ CONFIG_FILE = 'casafari-config.json'
 def load_config():
     defaults = {
         "lat": "59", "lon": "16", "AltLim": "30", "AltLimMax": "75", 
-        "AzLim": "240", "AzLimMax": "350", "expo": "30", "ip": "localhost:1888"
+        "AzLim": "240", "AzLimMax": "350", "expo": "30", "ip": "localhost:1888",
+        "platesolve": "false", "sequence_mode": "false"
     }
     if not os.path.exists(CONFIG_FILE):
         return defaults
@@ -210,19 +211,34 @@ HTML_TEMPLATE = """
         <div class="card">
             <h3>System Master Control</h3>
 
-            <div>
+            <div style="margin-bottom: 12px;">
                 <small style="color: #888; display: block; margin-bottom: 5px;">Automation Engine (Casafari)</small>
                 <form method="POST" class="btn-group">
-                    <button type="submit" name="action" value="start_casa" style="background: var(--success);">START</button>
-                    <button type="submit" name="action" value="stop_casa" class="btn-stop">STOP</button>
+                    <button type="submit" name="action" value="start_casa" style="background: {% if casa_enabled %}var(--success){% else %}#333{% endif %}; font-weight: bold;">ON</button>
+                    <button type="submit" name="action" value="stop_casa" style="background: {% if not casa_enabled %}var(--danger){% else %}#333{% endif %}; font-weight: bold;">OFF</button>
                 </form>
             </div>
 
+            <div style="margin-bottom: 12px;">
+                <small style="color: #888; display: block; margin-bottom: 5px;">Plate Solve & Center</small>
+                <form method="POST" class="btn-group">
+                    <button type="submit" name="action" value="enable_platesolve" style="background: {% if config.platesolve == 'true' %}var(--success){% else %}#333{% endif %}; font-weight: bold;">ON</button>
+                    <button type="submit" name="action" value="disable_platesolve" style="background: {% if config.platesolve != 'true' %}var(--danger){% else %}#333{% endif %}; font-weight: bold;">OFF</button>
+                </form>
+            </div>
 
-        <p style="font-size: 0.75rem; color: #666; margin-top: 20px;">
-            <i>Automation Engine handles target rotation when chat is idle.</i>
-        </p>
-    </div>
+            <div>
+                <small style="color: #888; display: block; margin-bottom: 5px;">Sequence Mode (Instead of Preview)</small>
+                <form method="POST" class="btn-group">
+                    <button type="submit" name="action" value="enable_sequence" style="background: {% if config.sequence_mode == 'true' %}var(--success){% else %}#333{% endif %}; font-weight: bold;">ON</button>
+                    <button type="submit" name="action" value="disable_sequence" style="background: {% if config.sequence_mode != 'true' %}var(--danger){% else %}#333{% endif %}; font-weight: bold;">OFF</button>
+                </form>
+            </div>
+
+            <p style="font-size: 0.75rem; color: #666; margin-top: 15px;">
+                <i>Master controls for automation, plate solving, and sequence execution.</i>
+            </p>
+        </div>
 
     <div class="card" style="grid-column: 1 / -1;">
         <h3>CASafari Target List</h3>
@@ -347,7 +363,9 @@ def index():
                 "AzLim": request.form.get("AzLim"),
                 "AzLimMax": request.form.get("AzLimMax"),
                 "expo": request.form.get("expo"),
-                "ip": request.form.get("ip")
+                "ip": request.form.get("ip"),
+                "platesolve": request.form.get("platesolve", "false"),
+                "sequence_mode": request.form.get("sequence_mode", "false")
             }
             
             #Save config data           
@@ -408,6 +426,22 @@ def index():
             r.set("status:casa_enabled", "true")
         elif action == "stop_casa":
             r.set("status:casa_enabled", "false")
+        elif action == "enable_platesolve":
+            config = load_config()
+            config["platesolve"] = "true"
+            save_config(config)
+        elif action == "disable_platesolve":
+            config = load_config()
+            config["platesolve"] = "false"
+            save_config(config)
+        elif action == "enable_sequence":
+            config = load_config()
+            config["sequence_mode"] = "true"
+            save_config(config)
+        elif action == "disable_sequence":
+            config = load_config()
+            config["sequence_mode"] = "false"
+            save_config(config)
 
         return redirect('/')
 
@@ -450,6 +484,9 @@ def index():
         except Exception:
             pass
 
+    casa_enabled_raw = r.get("status:casa_enabled")
+    casa_enabled = True if not casa_enabled_raw or casa_enabled_raw.lower() == "true" else False
+
     # Logic: If offline, dots are Red. If online, Slewing/Imaging are Yellow if active, or Grey if idle.
     context = {
         "lon": r.get("config:lon") or "Not Set",
@@ -464,6 +501,7 @@ def index():
         "captures_taken": r.get("session:captures") or "0",
         "commands_processed": r.get("session:commands_processed") or "0",
         "current_target": current_target_name,
+        "casa_enabled": casa_enabled,
         
         # Connection Dot Colors
         "nina_dot": "var(--success)" if is_online else "var(--danger)",

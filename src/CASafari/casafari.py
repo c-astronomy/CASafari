@@ -203,7 +203,9 @@ def load_config():
         "min_azimuth": 230,
         "max_azimuth": 350,
         "obs_lon": 16.4903,
-        "obs_lat": 59.6
+        "obs_lat": 59.6,
+        "platesolve": "false",
+        "sequence_mode": "false"
     }
 
     if os.path.exists('casafari-config.json'):
