@@ -365,7 +365,9 @@ def index():
                 "expo": request.form.get("expo"),
                 "ip": request.form.get("ip"),
                 "platesolve": request.form.get("platesolve", "false"),
+                #"platesolve": config.get("platesolve", "false"),
                 "sequence_mode": request.form.get("sequence_mode", "false")
+                #"sequence_mode": config.get("sequence_mode", "false")
             }
             
             #Save config data           

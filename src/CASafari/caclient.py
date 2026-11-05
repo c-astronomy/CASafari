@@ -21,14 +21,11 @@ class MockPubSub:
                     decoded = data.decode('utf-8', errors='ignore')
                     if "message" in decoded:
                         parts = decoded.strip().split('\r\n')
-                        # Index 5 is the length header, Index 6 is the actual payload!
                         if len(parts) >= 7:
                             msg_data = parts[6]
                             yield {"type": "message", "data": msg_data.encode('utf-8')}
                 except Exception:
                     break
-
-
 
 
 class CAClient:
@@ -77,17 +74,50 @@ class CAClient:
             return None
         try:
             self._sock.sendall(f"GET {key}\r\n".encode())
-            resp = self._sock.recv(4096)
-            if resp.startswith(b"$-1"):
+            
+            def read_line(sock):
+                buffer = bytearray()
+                while True:
+                    chunk = sock.recv(1)
+                    if not chunk:
+                        break
+                    buffer.extend(chunk)
+                    if buffer.endswith(b'\r\n'):
+                        return bytes(buffer)
+                return bytes(buffer)
+
+            line = read_line(self._sock)
+            if not line or line.startswith(b"$-1"):
                 return None
-            parts = resp.split(b"\r\n")
-            if len(parts) >= 2:
-                val = parts[1]
-                return val.decode('utf-8') if self.decode_responses else val
+            
+            if line.startswith(b"$"):
+                length = int(line[1:].strip())
+                data = b""
+                target_len = length + 2
+                while len(data) < target_len:
+                    packet = self._sock.recv(target_len - len(data))
+                    if not packet:
+                        break
+                    data += packet
+                
+                if len(data) >= target_len:
+                    val = data[:-2]
+                    return val.decode('utf-8') if self.decode_responses else val
+            
             return None
         except Exception:
             self._sock = None
             return None
+
+    def incr(self, key):
+        val = self.get(key)
+        try:
+            num = int(val) if val is not None else 0
+        except ValueError:
+            num = 0
+        num += 1
+        self.set(key, str(num))
+        return num
 
     def publish(self, channel, message):
         self._ensure_connection()
@@ -104,7 +134,6 @@ class CAClient:
         sub_client = CAClient(self.host, self.port, db=self.db, decode_responses=self.decode_responses)
         return MockPubSub(sub_client)
 
-# Layout mapping for redis namespace (Synchronous version)
 class redis:
     Redis = CAClient
 

@@ -25,6 +25,12 @@ import twitchio.web as web
 import json
 import os
 
+import time
+
+import ssl
+
+ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+
 from caclientasync import redis
 
 if TYPE_CHECKING:
@@ -68,9 +74,9 @@ BOT_ID = creds.get('bot_id', '')
 
 SCOPES = [
     "chat:read",
-    "chat:write",
     "chat:edit",
     "user:read:chat",
+    "user:write:chat",
     "moderator:read:followers"
 ]
 
@@ -78,6 +84,10 @@ SCOPES = [
 class Bot(commands.AutoBot):
     def __init__(self, *, token_database: asqlite.Pool, subs: list[eventsub.SubscriptionPayload]) -> None:
         self.token_database = token_database
+
+        # Define your local SSL context here
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain('cert.pem', 'key.pem') # Uncomment if using real/self-signed cert files
 
         super().__init__(
             client_id=CLIENT_ID,
@@ -87,9 +97,16 @@ class Bot(commands.AutoBot):
             prefix="!",
             subscriptions=subs,
             force_subscribe=True,
-            adapter = web.AiohttpAdapter(host="0.0.0.0", port=4343),
+            adapter=web.AiohttpAdapter(
+                host="localhost", 
+                port=4343, domain="localhost:4343",
+                ssl_context=ctx
+            ),
             scopes=SCOPES,
         )
+
+
+
 
     #THIS ONE MIGHT NOT BE NEEDED, ADDE WHEN TROUBLESHOOTING
     async def event_token_refreshed(self, payload: twitchio.TokenRefreshedPayload) -> None:
@@ -100,7 +117,8 @@ class Bot(commands.AutoBot):
         WHERE user_id = ?
         """
         async with self.token_database.acquire() as connection:
-            await connection.execute(query, (payload.access_token, payload.refresh_token, payload.user_id))
+            #await connection.execute(query, (payload.access_token, payload.refresh_token, payload.user_id))
+            await connection.execute(query, (payload.token, payload.refresh_token, payload.user_id))
         
         LOGGER.info("Successfully updated database with REFRESHED tokens for: %s", payload.user_id)
 
@@ -157,12 +175,36 @@ class Bot(commands.AutoBot):
         LOGGER.info("Added token to the database for user: %s", resp.user_id)
         return resp
 
+
+
     async def event_ready(self) -> None:
         LOGGER.info("Successfully logged in as: %s", self.bot_id)
-        try:
-            await r.set("heartbeat:twitch", time.time())
-        except Exception:
-            pass
+        # Start a continuous background loop for the heartbeat
+        #self.loop.create_task(self.heartbeat_loop())
+
+        # Initialize start time in Redis if it doesn't exist yet
+        existing_start = await r.get("session:start_time")
+        if not existing_start:
+            await r.set("session:start_time", time.time())
+
+
+
+
+        asyncio.create_task(self.heartbeat_loop())
+
+
+
+
+
+    async def heartbeat_loop(self):
+        while True:
+            try:
+                await r.set("heartbeat:twitch", time.time())
+            except Exception:
+                pass
+            await asyncio.sleep(5)  # Update every 5 seconds
+
+
 
 
 class MyComponent(commands.Component):
@@ -204,32 +246,47 @@ class MyComponent(commands.Component):
                 await r.incr("session:commands_processed")
             except Exception:
                 pass
-        
+
+
+
         if text.startswith('!slew_'):
+            targets = []
             raw_data = await r.get("nina:available_targets")
+            
             if raw_data:
-                targets = json.loads(raw_data)
-                target = next((t for t in targets if t['trigger'].lower() == text), None)
+                try:
+                    targets = json.loads(raw_data)
+                except Exception:
+                    pass
+            
+            # Fallback: if Redis doesn't have the list cached yet, read targetlist.json directly
+            if not targets and os.path.exists('targetlist.json'):
+                try:
+                    with open('targetlist.json', 'r') as f:
+                        targets = json.load(f)
+                except Exception:
+                    pass
 
-                if target:
-                    await r.set("nina:current_target", json.dumps(target))
-                    try:
-                        await r.incr("session:targets_slewed")
-                    except Exception:
-                        pass
-                    slew_payload = {
-                        "action": "slew", 
-                        "name": target['name'], 
-                        "ra": target.get('ra', 0), 
-                        "ra_min": target.get('ra_min', 0),
-                        "dec": target.get('dec', 0),
-                        "dec_min": target.get('dec_min', 0)
-                    }
-                    await r.publish("nina:commands", json.dumps(slew_payload))
-                    #TTS TEST, i have inconsistent ways of getting chatte name, like below and also ctx.chatter
-                    #r.publish("nina:speech", f"{payload.chatter.name} is Slewing to {target['name']}")
+            target = next((t for t in targets if t.get('trigger', '').lower() == text), None)
 
-                    return 
+            if target:
+                await r.set("nina:current_target", json.dumps(target))
+                try:
+                    await r.incr("session:targets_slewed")
+                except Exception:
+                    pass
+                
+                slew_payload = {
+                    "action": "slew", 
+                    "name": target['name'], 
+                    "ra": target.get('ra', 0), 
+                    "ra_min": target.get('ra_min', 0),
+                    "dec": target.get('dec', 0),
+                    "dec_min": target.get('dec_min', 0)
+                }
+                await r.publish("nina:commands", json.dumps(slew_payload))
+                print(f"🔭 Target locked & saved to Redis: {target['name']}")
+                return
 
 
 
@@ -238,26 +295,35 @@ class MyComponent(commands.Component):
     @commands.command()
     @commands.cooldown(rate=1, per=10, key=commands.BucketType.channel)
     async def capture(self, ctx: commands.Context) -> None:
-            raw_target = await r.get("nina:current_target")
-            if raw_target:
-                target = json.loads(raw_target)
-                exposure_time = 60
-                image_payload ={
-                   "action": "sequence",
-                   "name": target['name'],
-                   "exposure": exposure_time
-                }
-                await r.publish("nina:commands", json.dumps(image_payload))
-                try:
-                    await r.incr("session:captures")
-                except Exception:
-                    pass
-                #r.publish("nina:speech", f"{ctx.chatter} is starting an sequence of {exposure_time} second exposures of {target['name']}")
-                await ctx.reply(f"{ctx.chatter} is starting an sequence of {exposure_time} second exposures of {target['name']}!")
-            else:
-                await ctx.send("x No current target found in memory. Slew to a target first")
+        raw_target = await r.get("nina:current_target")
+        print(f"DEBUG: Retrieved nina:current_target from Redis -> {raw_target}")
+        target_name = "Unknown Target"
+        
+        if raw_target:
+            try:
+                # Handle both raw string names and JSON dictionaries safely
+                if raw_target.startswith("{"):
+                    target_data = json.loads(raw_target)
+                    target_name = target_data.get('name', 'Unknown Target')
+                else:
+                    target_name = raw_target
+            except Exception:
+                target_name = raw_target
 
-
+            exposure_time = 60
+            image_payload = {
+               "action": "sequence",
+               "name": target_name,
+               "exposure": exposure_time
+            }
+            await r.publish("nina:commands", json.dumps(image_payload))
+            try:
+                await r.incr("session:captures")
+            except Exception:
+                pass
+            await ctx.reply(f"{ctx.chatter} is starting the sequence for {target_name}!")
+        else:
+            await ctx.send("❌ No current target found in memory. Slew to a target first")
 
 
 
@@ -372,7 +438,7 @@ async def setup_database(db: asqlite.Pool) -> tuple[list[tuple[str, str]], list[
             if row["user_id"] == BOT_ID:
                 continue
 
-            subs.extend([eventsub.ChatMessageSubscription(broadcaster_user_id=row["user_id"], user_id=BOT_ID)])
+            subs.extend([eventsub.ChatMessageSubscription(broadcaster_user_id="OWNER_ID", user_id="BOT_ID")])
 
     return tokens, subs
 

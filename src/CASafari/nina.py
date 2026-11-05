@@ -8,7 +8,7 @@ import os
 from caclientasync import redis
 
 # --- CONFIG ---
-NINA_API = "http://localhost:1888/v2/api" #This needs to be the machine ip for NINA.
+NINA_API = "http://192.168.0.41:1888/v2/api" #This needs to be the machine ip for NINA.
 REDIS_URL = "redis://localhost:6379"
 HEARTBEAT_INTERVAL = 2 # Seconds
 
@@ -91,6 +91,7 @@ async def redis_listener(r_client):
     print("Redis Listener active. Waiting for commands...")
     pubsub = r_client.pubsub()
     await pubsub.subscribe("nina:commands")
+    await pubsub.subscribe("nina:updates")
     
     async for message in pubsub.listen():
         # Only process actual messages (ignore subscription confirmations)
@@ -249,13 +250,22 @@ async def execute_nina_command(cmd_data, r_client):
                 print("Slew complete. Settling for 3 seconds...")
                 await asyncio.sleep(3)
 
-                # 5. PLATE SOLVE CHECK (Toggle Option)
+
+                # 5. PLATE SOLVE & CENTER (Using target coordinates)
                 if get_config_value("platesolve", "false"):
-                    print("🔭 Plate Solve & Center enabled. Triggering plate solve...")
+                    print("🔭 Plate Solve & Center enabled. Triggering capture, solve & center...")
                     try:
-                        async with session.get(f"{NINA_API}/framing/center") as solve_resp:
+                        solve_params = {
+                            "solve": "true",
+                            "center": "true",          # Tells N.I.N.A. to automatically correct mount pointing if off-center
+                            "omitImage": "true", 
+                            "waitForResult": "true",
+                            "targetName": target_name  # Passes the target name context for N.I.N.A.'s platesolver
+                        }
+                        
+                        async with session.get(f"{NINA_API}/equipment/camera/capture", params=solve_params) as solve_resp:
                             if solve_resp.status in [200, 202, 204]:
-                                print("✅ Plate solve & center triggered successfully!")
+                                print("✅ Plate solve & center execution completed!")
                             else:
                                 text = await solve_resp.text()
                                 print(f"⚠️ Plate solve/center returned status {solve_resp.status}: {text}")
@@ -263,18 +273,50 @@ async def execute_nina_command(cmd_data, r_client):
                         print(f"❌ Error during plate solve/center: {pe}")
                     await asyncio.sleep(3)
 
+
+
+
                 # 6. POST-SLEW ACTION: SEQUENCE MODE vs PREVIEW CAPTURE (Toggle Option)
                 if get_config_value("sequence_mode", "false"):
-                    print("🚀 Sequence Mode enabled: Resetting and starting sequence...")
+                    
+                    # 6. POST-SLEW ACTION: SEQUENCE MODE
+                    print(f"🚀 Sequence Mode enabled for '{target_name}': Updating target context...")
+
                     await session.get(f"{NINA_API}/application/switch-tab?tab=imaging")
                     await asyncio.sleep(0.5)
+
+                    # Update Advanced Sequencer target container (index=0)
+                    target_payload = {
+                        "name": target_name,
+                        "ra": precise_ra,
+                        "dec": precise_dec,
+                        "rotation": 0,
+                        "index": 0
+                    }
+                    async with session.get(f"{NINA_API}/sequence/set-target", params=target_payload) as target_resp:
+                        if target_resp.status in [200, 202, 204]:
+                            print(f"✅ Sequencer target updated to {target_name}!")
+
+                    await asyncio.sleep(0.5)
+                    
                     async with session.get(f"{NINA_API}/sequence/reset") as seq_resp:
                         if seq_resp.status in [200, 202, 204]:
                             print("✅ NINA sequence reset!")
+
                     await asyncio.sleep(0.5)
+
                     async with session.get(f"{NINA_API}/sequence/start") as seq_start:
                         if seq_start.status in [200, 202, 204]:
-                            print("🚀 NINA sequence started successfully!")
+                            print(f"🚀 NINA sequence started successfully for {target_name}!")
+
+
+
+
+
+
+
+
+
                 else:
                     # Old way: Preview capture
                     await session.get(f"{NINA_API}/application/switch-tab?tab=imaging")
@@ -301,42 +343,66 @@ async def execute_nina_command(cmd_data, r_client):
 
         # SEQUENCE HANDLER
         if action == "sequence":
+            # SEQUENCE HANDLER
             state["camera_busy"] = True
-            print("NINA: Resetting and starting sequence...")
+            print(f"NINA: Handling manual sequence request for {target_name}...")
 
             try:
-                # 1. Switch tab to Imaging
-                async with session.get(f"{NINA_API}/application/switch-tab?tab=imaging") as resp:
-                    if resp.status not in [200, 202, 204]:
-                        text = await resp.text()
-                        print(f"❌ Switch-tab failed ({resp.status}): {text}")
+                raw_ra_h = float(cmd_data.get('ra', 0))
+                raw_ra_m = float(cmd_data.get('ra_min', 0))
+                raw_dec_d = float(cmd_data.get('dec', 0))
+                raw_dec_m = float(cmd_data.get('dec_min', 0))
+                p_ra, p_dec = convert_for_slew(raw_ra_h, raw_ra_m, raw_dec_d, raw_dec_m)
+
+                await session.get(f"{NINA_API}/application/switch-tab?tab=imaging")
+                await asyncio.sleep(0.5)
+
+                # Update Advanced Sequencer target container (index=0)
+                target_payload = {
+                    "name": target_name,
+                    "ra": p_ra,
+                    "dec": p_dec,
+                    "rotation": 0,
+                    "index": 0
+                }
+                async with session.get(f"{NINA_API}/sequence/set-target", params=target_payload) as target_resp:
+                    if target_resp.status in [200, 202, 204]:
+                        print(f"✅ Sequencer target updated to {target_name}!")
 
                 await asyncio.sleep(0.5)
 
-                # 2. Reset Sequence
                 async with session.get(f"{NINA_API}/sequence/reset") as resp:
                     if resp.status in [200, 202, 204]:
                         print("✅ NINA sequence reset!")
-                    else:
-                        text = await resp.text()
-                        print(f"❌ Sequence reset failed ({resp.status}): {text}")
 
                 await asyncio.sleep(0.5)
 
-                # 3. Start Sequence
                 async with session.get(f"{NINA_API}/sequence/start") as resp:
                     if resp.status in [200, 202, 204]:
-                        print("🚀 NINA sequence started successfully!")
-                    else:
-                        text = await resp.text()
-                        print(f"❌ Sequence start failed ({resp.status}): {text}")
+                        print(f"🚀 NINA sequence started successfully for {target_name}!")
 
             except Exception as e:
-                print(f"❌ Network Error during sequence chain: {e}")
+                print(f"❌ Error during sequence chain: {e}")
             finally:
-                # Note: If your heartbeat doesn't catch 'camera_busy' via IsExposing or Sequence Status,
-                # you may want to keep state["camera_busy"] = True until a WebSocket/heartbeat clears it.
                 pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         #SEQUENCE END
